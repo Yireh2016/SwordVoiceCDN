@@ -105,7 +105,7 @@ router.post("/addClass", (req, res) => {
   );
 });
 
-router.delete("/deleteFiles/:url", (req, res) => {
+router.post("/deleteFiles/", (req, res) => {
   const data = req.body;
 
   fs.readdir(`./uploads/articles/${data.url}`, (err, files) => {
