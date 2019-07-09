@@ -69,25 +69,6 @@ router.post("/uploadTempFile/", upload.single("file"), (req, res) => {
   );
 });
 
-// (req, res) => {
-//   const { url } = req.params;
-
-//   let form = new formidable.IncomingForm();
-//   form.parse(req, (err, fields, files) => {
-//     fs.rename(
-//       `${files.file.path}`,
-//       `./uploads/articles/${url}/${files.file.name}`,
-//       err => {
-//         if (err) {
-//           res.json(`error copiando archivo ${err}`);
-//         } else {
-//           res.status(200).send();
-//         }
-//       }
-//     );
-//   });
-// }
-
 router.post("/addClass", (req, res) => {
   const { url, filename, classes } = req.query;
 
