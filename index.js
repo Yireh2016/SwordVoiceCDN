@@ -1,7 +1,6 @@
 const express = require("express");
 const cdn = require("./api/cdn");
 const cors = require("cors");
-const cookieParser = require("cookie-parser");
 
 const server = express();
 
