@@ -1,6 +1,10 @@
 let express = require("express");
 let fs = require("fs");
 let multer = require("multer");
+let path = require("path");
+
+//services
+let applySmartCrop = require("./services/cropImage");
 
 let router = express.Router();
 
@@ -111,6 +115,69 @@ router.post("/deleteFiles/", (req, res) => {
   });
 
   res.status(200).send();
+});
+
+router.post("/uploadAvatar/", (req, res) => {
+  const { userName } = req.query;
+  const { base64 } = req.body;
+  const fileType = base64.match(/^data:image\/(\w+)/);
+  const base64Str = base64.replace(/^data:image\/\w+;base64,/, "");
+
+  const dir = `./uploads/users/${userName}`;
+  let filename = `${userName}_original`;
+
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir);
+  }
+
+  fs.writeFile(
+    `./uploads/users/${userName}/${filename}.${fileType[1]}`,
+    base64Str,
+    "base64",
+    err => {
+      if (err) {
+        console.log("api cdn err", err);
+        res.status(404).send(`error copiando archivo ${err}`);
+      } else {
+        const imageURL = `${
+          process.env.CDN_URL
+        }/users/${userName}/${filename}.${fileType[1]}`;
+        const apiDir = __dirname;
+        const tempImgDir = path.join(
+          apiDir.replace("\\api", "") +
+            `/uploads/users/${userName}/${filename}.${fileType[1]}`
+        );
+
+        console.log("imageURL", imageURL);
+
+        applySmartCrop(
+          imageURL,
+          tempImgDir.replace("original", "big"),
+          200,
+          200,
+          applySmartCrop(
+            imageURL,
+            tempImgDir.replace("original", "small"),
+            50,
+            50,
+            () => {
+              fs.unlink(tempImgDir, err => {
+                err && console.log("error eliminando archivo", err);
+                res.status(200).json({
+                  avatarURL: `${
+                    process.env.CDN_URL
+                  }/users/${userName}/${filename}.${fileType[1]}`.replace(
+                    "original",
+                    "big"
+                  )
+                });
+              });
+            }
+          )
+        );
+      }
+    }
+  );
 });
 
 module.exports = router;

@@ -1,7 +1,7 @@
 const express = require("express");
 const cdn = require("./api/cdn");
 const cors = require("cors");
-
+require("dotenv").config();
 const server = express();
 
 //midlewares
