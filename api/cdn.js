@@ -1,7 +1,14 @@
-let express = require("express");
-let fs = require("fs");
-let multer = require("multer");
-let path = require("path");
+const express = require("express");
+const fs = require("fs");
+const multer = require("multer");
+const path = require("path");
+const sizeOf = require("image-size");
+const del = require("del");
+
+const imagemin = require("imagemin");
+const imageminOptipng = require("imagemin-optipng");
+const imageminSvgo = require("imagemin-svgo");
+const imageminMozjpeg = require("imagemin-mozjpeg");
 
 //services
 let applySmartCrop = require("./services/cropImage");
@@ -178,6 +185,142 @@ router.post("/uploadAvatar/", (req, res) => {
       }
     }
   );
+});
+
+router.post("/uploadPostImage/", (req, res) => {
+  const { base64, url, filename, thumbnail } = req.body;
+  const base64Str = base64.replace(/^data:image\/\w+;base64,/, "");
+
+  const dir = `./uploads/articles/${url}/tmp/thumb`;
+
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(`./uploads/articles/${url}/tmp/`);
+    fs.mkdirSync(`./uploads/articles/${url}/tmp/thumb`);
+  }
+
+  let writeDir = `${dir}/${filename}`.replace("/thumb", "");
+
+  fs.writeFile(writeDir, base64Str, "base64", err => {
+    if (err) {
+      console.log("api cdn err", err);
+      res.status(404).send(`error copiando archivo ${err}`);
+    } else {
+      const imageURL = `${process.env.CDN_URL}/articles/${url}/tmp/${filename}`;
+      const apiDir = __dirname;
+      let tempImgDir;
+
+      if (thumbnail) {
+        tempImgDir = path.join(
+          apiDir.replace("\\api", "") +
+            `${`${dir}/${filename}`.replace("./", "/")}`
+        );
+
+        console.log("imageURL", imageURL);
+        console.log("tempImgDir", tempImgDir);
+
+        applySmartCrop(
+          imageURL,
+          tempImgDir,
+          600,
+          584,
+          applySmartCrop(
+            imageURL,
+            tempImgDir.replace(".", "_tablet."),
+            400,
+            389,
+            applySmartCrop(
+              imageURL,
+              tempImgDir.replace(".", "_mobile."),
+              250,
+              243,
+              async () => {
+                const thumbnails = await imagemin(
+                  [`./uploads/articles/${url}/tmp/thumb/*.{jpg,png,svg}`],
+                  {
+                    destination: `uploads/articles/${url}/`,
+                    plugins: [
+                      imageminSvgo(),
+                      imageminMozjpeg({ quality: 80 }),
+                      imageminOptipng()
+                    ]
+                  }
+                );
+
+                console.log("thumbnails", thumbnails);
+
+                (async () => {
+                  const deletedPaths = await del([
+                    `uploads/articles/${url}/tmp/thumb/*.{jpg,png,svg}`
+                  ]);
+                  await del([`uploads/articles/${url}/tmp/*.{jpg,png,svg}`]);
+
+                  console.log(
+                    "Deleted files and directories:\n",
+                    deletedPaths.join("\n")
+                  );
+                })();
+
+                res.status(200).send(`success`);
+              }
+            )
+          )
+        );
+      } else {
+        sizeOf(`uploads/articles/${url}/tmp/${filename}`, (err, dimensions) => {
+          console.log(dimensions.width, dimensions.height);
+
+          tempImgDir = path.join(
+            apiDir.replace("\\api", "") + `${writeDir.replace("./", "/")}`
+          );
+
+          applySmartCrop(
+            imageURL,
+            tempImgDir.replace(".", "_tablet."),
+            parseInt((dimensions.width * 2) / 3),
+            parseInt((dimensions.height * 2) / 3),
+            applySmartCrop(
+              imageURL,
+              tempImgDir.replace(".", "_mobile."),
+              parseInt((dimensions.width * 2) / 6),
+              parseInt((dimensions.height * 2) / 6),
+              async () => {
+                //                 const imageminOptipng = require('imagemin-optipng');
+                // const imageminSvgo = require('imagemin-svgo');
+                // const imageminMozjpeg = require('imagemin-mozjpeg');
+
+                const files = await imagemin(
+                  [`uploads/articles/${url}/tmp/*.{jpg,png,svg}`],
+                  {
+                    destination: `uploads/articles/${url}/`,
+                    plugins: [
+                      imageminSvgo(),
+                      imageminMozjpeg({ quality: 80 }),
+                      imageminOptipng()
+                    ]
+                  }
+                );
+
+                (async () => {
+                  const deletedPaths = await del([
+                    `uploads/articles/${url}/tmp/*.{jpg,png,svg}`
+                  ]);
+
+                  console.log(
+                    "Deleted files and directories:\n",
+                    deletedPaths.join("\n")
+                  );
+                })();
+
+                console.log("files", files);
+
+                res.status(200).send(`success`);
+              }
+            )
+          );
+        });
+      }
+    }
+  });
 });
 
 module.exports = router;

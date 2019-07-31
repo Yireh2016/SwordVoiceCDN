@@ -6,8 +6,14 @@ const applySmartCrop = (src, dest, width, height, callback) => {
   request(src, { encoding: null }, function process(error, response, body) {
     if (error) return console.error(error);
 
+    const cropOpt = height
+      ? { width: width, height: height }
+      : { width: width };
+
+    console.log("cropOpt", cropOpt);
+
     smartcrop
-      .crop(body, { width: width, height: height })
+      .crop(body, cropOpt)
       .then(function(result) {
         let crop = result.topCrop;
         sharp(body)
