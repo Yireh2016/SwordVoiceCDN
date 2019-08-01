@@ -6,7 +6,7 @@ const sizeOf = require("image-size");
 const del = require("del");
 
 const imagemin = require("imagemin");
-const imageminOptipng = require("imagemin-optipng");
+const imageminPngquant = require("imagemin-pngquant");
 const imageminSvgo = require("imagemin-svgo");
 const imageminMozjpeg = require("imagemin-mozjpeg");
 
@@ -109,11 +109,17 @@ router.post("/deleteFiles/", (req, res) => {
     files.forEach(file => {
       let found = false;
       for (let i = 0; i < data.files.length; i++) {
-        if (file === data.files[i]) {
+        if (
+          file
+            .replace(/\.\w{3,4}/, "")
+            .match(data.files[i].replace(/\.\w{3,4}/, ""))
+        ) {
           found = true;
+          break;
         }
       }
       if (!found) {
+        console.log(`eliminado ./uploads/articles/${data.url}/${file}`);
         fs.unlink(`./uploads/articles/${data.url}/${file}`, err => {
           err && console.log("error eliminando archivo", err);
         });
@@ -193,10 +199,14 @@ router.post("/uploadPostImage/", (req, res) => {
 
   const dir = `./uploads/articles/${url}/tmp/thumb`;
 
-  if (!fs.existsSync(dir)) {
+  !fs.existsSync(`./uploads/articles/${url}`) &&
+    fs.mkdirSync(`./uploads/articles/${url}`);
+
+  !fs.existsSync(`./uploads/articles/${url}/tmp/`) &&
     fs.mkdirSync(`./uploads/articles/${url}/tmp/`);
+
+  !fs.existsSync(`./uploads/articles/${url}/tmp/thumb/`) &&
     fs.mkdirSync(`./uploads/articles/${url}/tmp/thumb`);
-  }
 
   let writeDir = `${dir}/${filename}`.replace("/thumb", "");
 
@@ -215,7 +225,7 @@ router.post("/uploadPostImage/", (req, res) => {
             `${`${dir}/${filename}`.replace("./", "/")}`
         );
 
-        console.log("imageURL", imageURL);
+        console.log("\n " + "imageURL", imageURL);
         console.log("tempImgDir", tempImgDir);
 
         applySmartCrop(
@@ -234,19 +244,30 @@ router.post("/uploadPostImage/", (req, res) => {
               250,
               243,
               async () => {
-                const thumbnails = await imagemin(
-                  [`./uploads/articles/${url}/tmp/thumb/*.{jpg,png,svg}`],
-                  {
-                    destination: `uploads/articles/${url}/`,
-                    plugins: [
-                      imageminSvgo(),
-                      imageminMozjpeg({ quality: 80 }),
-                      imageminOptipng()
-                    ]
-                  }
-                );
+                let thumbnails;
+                try {
+                  thumbnails = await imagemin(
+                    [`./uploads/articles/${url}/tmp/thumb/*.{jpg,png,svg}`],
+                    {
+                      destination: `uploads/articles/${url}/`,
+                      plugins: [
+                        imageminSvgo(),
+                        imageminMozjpeg({ quality: 80 }),
+                        imageminPngquant({ quality: [0, 0.5] })
+                      ]
+                    }
+                  );
+                } catch (err) {
+                  console.log("imagemin", err);
+                }
 
                 console.log("thumbnails", thumbnails);
+                thumbnails.forEach(thumb => {
+                  if (!thumb.data) {
+                    res.status(404).send(`error on image minify`);
+                    return;
+                  }
+                });
 
                 (async () => {
                   const deletedPaths = await del([
@@ -284,7 +305,7 @@ router.post("/uploadPostImage/", (req, res) => {
               parseInt((dimensions.width * 2) / 6),
               parseInt((dimensions.height * 2) / 6),
               async () => {
-                //                 const imageminOptipng = require('imagemin-optipng');
+                //                 const imageminPngquant = require('imagemin-optipng');
                 // const imageminSvgo = require('imagemin-svgo');
                 // const imageminMozjpeg = require('imagemin-mozjpeg');
 
@@ -295,10 +316,18 @@ router.post("/uploadPostImage/", (req, res) => {
                     plugins: [
                       imageminSvgo(),
                       imageminMozjpeg({ quality: 80 }),
-                      imageminOptipng()
+                      imageminPngquant({ quality: [0.3, 0.5] })
                     ]
                   }
                 );
+
+                console.log("files", files);
+                files.forEach(file => {
+                  if (!file.data) {
+                    res.status(404).send(`error on image minify`);
+                    return;
+                  }
+                });
 
                 (async () => {
                   const deletedPaths = await del([
@@ -310,8 +339,6 @@ router.post("/uploadPostImage/", (req, res) => {
                     deletedPaths.join("\n")
                   );
                 })();
-
-                console.log("files", files);
 
                 res.status(200).send(`success`);
               }
