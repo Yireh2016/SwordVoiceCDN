@@ -140,7 +140,9 @@ router.post("/uploadAvatar/", (req, res) => {
   let filename = `${userName}_original`;
 
   if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir);
+    // fs.mkdirSync(dir);
+
+    fs.mkdirSync(dir, { recursive: true });
   }
 
   fs.writeFile(
