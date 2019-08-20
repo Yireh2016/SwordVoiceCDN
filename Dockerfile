@@ -1,4 +1,4 @@
-FROM node:chakracore-10.13.0
+FROM node:12.8.0-slim
 
 RUN mkdir -p /app
 COPY . /app
