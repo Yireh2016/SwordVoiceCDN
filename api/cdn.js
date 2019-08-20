@@ -139,7 +139,15 @@ router.post("/uploadAvatar/", (req, res) => {
   const dir = `./uploads/users/${userName}`;
   let filename = `${userName}_original`;
 
+  if (!fs.existsSync(`./uploads/users/`)) {
+    // fs.mkdirSync(dir);
+
+    fs.mkdirSync("./uploads/users/");
+  }
+
   if (!fs.existsSync(dir)) {
+    // fs.mkdirSync(dir);
+
     fs.mkdirSync(dir);
   }
 
