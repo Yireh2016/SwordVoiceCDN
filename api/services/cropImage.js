@@ -30,10 +30,12 @@ const applySmartCrop = (src, dest, width, height, callback) => {
           })
           .catch(err => {
             console.error(err);
+            callback(err);
           });
       })
       .catch(err => {
         console.error(err);
+        callback(err);
       });
   });
 };

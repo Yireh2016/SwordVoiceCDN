@@ -53,6 +53,10 @@ router.post("/createPost/:url", (req, res) => {
 
   console.log("url del post ", url);
 
+  if (!fs.existsSync(`./uploads/articles`)) {
+    fs.mkdirSync(`./uploads/articles`);
+  }
+
   if (!fs.existsSync(`./uploads/articles/${url}`)) {
     fs.mkdirSync(`./uploads/articles/${url}`);
   }
@@ -172,25 +176,44 @@ router.post("/uploadAvatar/", (req, res) => {
           tempImgDir.replace("original", "big"),
           200,
           200,
-          applySmartCrop(
-            imageURL,
-            tempImgDir.replace("original", "small"),
-            50,
-            50,
-            () => {
-              fs.unlink(tempImgDir, err => {
-                err && console.log("error eliminando archivo", err);
-                res.status(200).json({
-                  avatarURL: `${
-                    process.env.CDN_URL
-                  }/users/${userName}/${filename}.${fileType[1]}`.replace(
-                    "original",
-                    "big"
-                  )
-                });
-              });
+          err => {
+            if (err) {
+              console.log("error on cropping big image", err);
+              res.status(404).send({ error: err });
+              return;
             }
-          )
+
+            applySmartCrop(
+              imageURL,
+              tempImgDir.replace("original", "small"),
+              50,
+              50,
+              err => {
+                if (err) {
+                  console.log("error on cropping big image", err);
+                  res.status(404).send({ error: err });
+                  return;
+                }
+
+                fs.unlink(tempImgDir, err => {
+                  if (err) {
+                    console.log("error on cropping big image", err);
+                    res.status(404).send({ error: err });
+                    return;
+                  }
+
+                  res.status(200).json({
+                    avatarURL: `${
+                      process.env.CDN_URL
+                    }/users/${userName}/${filename}.${fileType[1]}`.replace(
+                      "original",
+                      "big"
+                    )
+                  });
+                });
+              }
+            );
+          }
         );
       }
     }
