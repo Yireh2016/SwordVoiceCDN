@@ -4,7 +4,10 @@ let smartcrop = require("smartcrop-sharp");
 
 const applySmartCrop = (src, dest, width, height, callback) => {
   request(src, { encoding: null }, function process(error, response, body) {
-    if (error) return console.error(error);
+    if (error) {
+      console.error(error);
+      return callback(error);
+    }
 
     const cropOpt = height
       ? { width: width, height: height }
@@ -15,6 +18,7 @@ const applySmartCrop = (src, dest, width, height, callback) => {
     smartcrop
       .crop(body, cropOpt)
       .then(function(result) {
+        console.log("result", result);
         let crop = result.topCrop;
         sharp(body)
           .extract({

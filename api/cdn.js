@@ -197,7 +197,7 @@ router.post("/uploadAvatar/", (req, res) => {
 
                 fs.unlink(tempImgDir, err => {
                   if (err) {
-                    console.log("error on cropping big image", err);
+                    console.log("error deleting image", err);
                     res.status(404).send({ error: err });
                     return;
                   }
