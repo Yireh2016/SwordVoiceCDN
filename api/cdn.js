@@ -249,7 +249,7 @@ router.post("/uploadPostImage/", (req, res) => {
 
       if (thumbnail) {
         tempImgDir = path.join(
-          apiDir.replace("\\api", "") +
+          apiDir.replace("api", "") +
             `${`${dir}/${filename}`.replace("./", "/")}`
         );
 
@@ -319,7 +319,7 @@ router.post("/uploadPostImage/", (req, res) => {
           console.log(dimensions.width, dimensions.height);
 
           tempImgDir = path.join(
-            apiDir.replace("\\api", "") + `${writeDir.replace("./", "/")}`
+            apiDir.replace("api", "") + `${writeDir.replace("./", "/")}`
           );
 
           applySmartCrop(
