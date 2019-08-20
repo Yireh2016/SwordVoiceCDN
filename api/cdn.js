@@ -165,11 +165,12 @@ router.post("/uploadAvatar/", (req, res) => {
         }/users/${userName}/${filename}.${fileType[1]}`;
         const apiDir = __dirname;
         const tempImgDir = path.join(
-          apiDir.replace("\\api", "") +
+          apiDir.replace("api", "") +
             `/uploads/users/${userName}/${filename}.${fileType[1]}`
         );
 
         console.log("imageURL", imageURL);
+        console.log("tempImgDir", tempImgDir);
 
         applySmartCrop(
           imageURL,

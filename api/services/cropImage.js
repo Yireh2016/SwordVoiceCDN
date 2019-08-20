@@ -33,12 +33,12 @@ const applySmartCrop = (src, dest, width, height, callback) => {
             callback && callback();
           })
           .catch(err => {
-            console.error("error on smartcrop", err);
+            console.error("error on sharp", err);
             callback(err);
           });
       })
       .catch(err => {
-        console.error("error on sharp", err);
+        console.error("error on smartcrop", err);
         callback(err);
       });
   });
