@@ -190,7 +190,7 @@ router.post("/uploadAvatar/", (req, res) => {
               50,
               err => {
                 if (err) {
-                  console.log("error on cropping big image", err);
+                  console.log("error on cropping small image", err);
                   res.status(404).send({ error: err });
                   return;
                 }

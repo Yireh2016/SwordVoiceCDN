@@ -1,4 +1,4 @@
-FROM node:8-alpine
+FROM node:chakracore-10.13.0
 
 RUN mkdir -p /app
 COPY . /app
