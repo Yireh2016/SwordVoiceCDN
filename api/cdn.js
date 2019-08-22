@@ -256,64 +256,77 @@ router.post("/uploadPostImage/", (req, res) => {
         console.log("\n " + "imageURL", imageURL);
         console.log("tempImgDir", tempImgDir);
 
-        applySmartCrop(
-          imageURL,
-          tempImgDir,
-          600,
-          584,
+        applySmartCrop(imageURL, tempImgDir, 600, 584, (err, size) => {
+          if (err || size === 0) {
+            res.status(404).send(`error on image minify`);
+            return;
+          }
+
           applySmartCrop(
             imageURL,
             tempImgDir.replace(".", "_tablet."),
             400,
             389,
-            applySmartCrop(
-              imageURL,
-              tempImgDir.replace(".", "_mobile."),
-              250,
-              243,
-              async () => {
-                let thumbnails;
-                try {
-                  thumbnails = await imagemin(
-                    [`./uploads/articles/${url}/tmp/thumb/*.{jpg,png,svg}`],
-                    {
-                      destination: `uploads/articles/${url}/`,
-                      plugins: [
-                        imageminSvgo(),
-                        imageminMozjpeg({ quality: 80 }),
-                        imageminPngquant({ quality: [0, 0.5] })
-                      ]
-                    }
-                  );
-                } catch (err) {
-                  console.log("imagemin", err);
-                }
+            (err, size) => {
+              if (err || size === 0) {
+                res.status(404).send(`error on image minify`);
+                return;
+              }
 
-                console.log("thumbnails", thumbnails);
-                thumbnails.forEach(thumb => {
-                  if (!thumb.data) {
+              applySmartCrop(
+                imageURL,
+                tempImgDir.replace(".", "_mobile."),
+                250,
+                243,
+                async (err, size) => {
+                  console.log(`err ${err}, size ${size}`);
+                  let thumbnails;
+                  if (err || size === 0) {
                     res.status(404).send(`error on image minify`);
                     return;
                   }
-                });
+                  try {
+                    thumbnails = await imagemin(
+                      [`./uploads/articles/${url}/tmp/thumb/*.{jpg,png,svg}`],
+                      {
+                        destination: `uploads/articles/${url}/`,
+                        plugins: [
+                          imageminSvgo(),
+                          imageminMozjpeg({ quality: 80 }),
+                          imageminPngquant({ quality: [0, 0.5] })
+                        ]
+                      }
+                    );
+                  } catch (err) {
+                    console.log("imagemin", err);
+                  }
 
-                (async () => {
-                  const deletedPaths = await del([
-                    `uploads/articles/${url}/tmp/thumb/*.{jpg,png,svg}`
-                  ]);
-                  await del([`uploads/articles/${url}/tmp/*.{jpg,png,svg}`]);
+                  console.log("thumbnails", thumbnails);
+                  thumbnails.forEach(thumb => {
+                    if (!thumb.data) {
+                      res.status(404).send(`error on image minify`);
+                      return;
+                    }
+                  });
 
-                  console.log(
-                    "Deleted files and directories:\n",
-                    deletedPaths.join("\n")
-                  );
-                })();
+                  (async () => {
+                    const deletedPaths = await del([
+                      `uploads/articles/${url}/tmp/thumb/*.{jpg,png,svg}`
+                    ]);
+                    await del([`uploads/articles/${url}/tmp/*.{jpg,png,svg}`]);
 
-                res.status(200).send(`success`);
-              }
-            )
-          )
-        );
+                    console.log(
+                      "Deleted files and directories:\n",
+                      deletedPaths.join("\n")
+                    );
+                  })();
+
+                  res.status(200).send(`success`);
+                }
+              );
+            }
+          );
+        });
       } else {
         sizeOf(`uploads/articles/${url}/tmp/${filename}`, (err, dimensions) => {
           console.log(dimensions.width, dimensions.height);

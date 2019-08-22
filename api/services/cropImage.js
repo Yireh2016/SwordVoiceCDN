@@ -28,13 +28,12 @@ const applySmartCrop = (src, dest, width, height, callback) => {
             top: crop.y
           })
           .resize(width, height)
-          .toFile(dest)
-          .then(() => {
-            callback && callback();
-          })
-          .catch(err => {
-            console.error("error on sharp", err);
-            callback(err);
+          .toFile(dest, (err, info) => {
+            console.log("err for file sharp", err);
+            console.log("info for file sharp", info);
+            console.log("info size for file sharp", info.size);
+
+            callback && callback(err, info.size);
           });
       })
       .catch(err => {
