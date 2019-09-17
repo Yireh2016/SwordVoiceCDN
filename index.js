@@ -7,13 +7,14 @@ require("dotenv").config();
 const server = express();
 
 //midlewares
-server.use(compression());
+
 server.use(cors()); //cors enable only dev
 
 server.use(express.json({ limit: "50mb", extended: true })); //body parser
 
 server.use(express.static("uploads/")); //static files
 
+server.use(compression());
 //routes
 server.use("/cdn", cdn);
 
